@@ -1,0 +1,95 @@
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Orbitron:wght@500&display=swap');
+
+/* Reset */
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Montserrat',sans-serif; background:#0a0a0a; color:#fff; overflow-x:hidden; position:relative; }
+
+/* Smoke Overlay */
+#smoke {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: url('') center/cover no-repeat;
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* FULLSCREEN PARTICLE BACKGROUND */
+#particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -2;        /* Behind everything */
+  pointer-events: none;
+  background: transparent;
+}
+
+/* Smoke animation */
+@keyframes drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 1000px 0; }
+}
+
+/* Header */
+header { display:flex; justify-content:space-between; align-items:center; padding:20px 50px; position:sticky; top:0; background:rgba(10,10,10,0.9); z-index:10; }
+.logo h1 { font-family:'Orbitron',sans-serif; letter-spacing:3px; font-size:2rem; color:#00ffff; position:relative; transition: 0.3s; cursor:pointer; }
+header nav a { color:#fff; margin-left:20px; text-decoration:none; transition:0.3s; }
+header nav a:hover { color:#ff3b2f; text-shadow:0 0 10px #ff3b2f; }
+
+/* Glitch Hover */
+.glitch::before, .glitch::after { content: attr(data-text); position:absolute; left:0; top:0; opacity:0.8; }
+.glitch::before { color:#ff3b2f; clip:rect(0,9999px,0,0); }
+.glitch::after { color:#00ffea; clip:rect(0,9999px,0,0); }
+.glitch:hover::before, .glitch:hover::after { animation: glitchHover 0.5s infinite; }
+
+@keyframes glitchHover {
+  0%{ transform:translate(0,0);}
+  20%{ transform:translate(-2px,2px);}
+  40%{ transform:translate(2px,-2px);}
+  60%{ transform:translate(-1px,1px);}
+  80%{ transform:translate(1px,-1px);}
+  100%{ transform:translate(0,0);}
+}
+
+/* Hero Section */
+#hero { display:flex; flex-direction:column; justify-content:center; align-items:center; height:80vh; text-align:center; animation: fadeIn 2s ease; }
+#hero h2 { font-size:2.5rem; color:#00ffff; margin-bottom:20px; text-shadow:0 0 5px #00ffff; animation: flicker 3s infinite; }
+#hero p { font-size:1.2rem; color:#ccc; }
+
+/* Sections */
+section { padding:80px 50px; border-bottom:1px solid rgba(255,255,255,0.1); }
+
+/* Project Cards */
+.project-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; }
+.project-card { background: rgba(255,255,255,0.05); padding:30px; border-radius:10px; text-align:center; transition: transform 0.3s, box-shadow 0.3s, background 0.3s; cursor:pointer; }
+.project-card:hover { transform: translateY(-15px) rotate(-2deg); box-shadow: 0 0 25px #00ffff; background: rgba(255,255,255,0.1); }
+
+/* Buttons */
+button { background:#00ffff; border:none; padding:10px 20px; cursor:pointer; transition:0.3s; }
+button:hover { background:#ff3b2f; box-shadow:0 0 20px #ff3b2f; animation:flicker 2s infinite; }
+
+/* Fade In Animation */
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+/* Flicker Effect */
+@keyframes flicker {
+  0%,19%,21%,23%,25%,54%,56%,100% { opacity:1; text-shadow:0 0 5px #00ffff,0 0 10px #00ffff; }
+  20%,22%,24%,55% { opacity:0.4; text-shadow:none; }
+}
+
+/* Responsive */
+@media(max-width:768px){
+  header { flex-direction:column; }
+  header nav a { margin:10px 0; }
+  #hero h2 { font-size:2rem; }
+}
+
+/* Keep all content above the particle canvas */
+body, header, section, footer {
+  position: relative;
+  z-index: 2;
+}

@@ -5,104 +5,9 @@
   <title>GHXST | Hassan Abkow</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
-
-  <style>
-    /* Reset */
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Montserrat',sans-serif; background:#0a0a0a; color:#fff; overflow-x:hidden; }
-
-    /* Particle Background */
-    #particles {
-      position: fixed;
-      inset: 0;
-      z-index: -2;
-      pointer-events: none;
-    }
-
-    /* Header */
-    header {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:20px 50px;
-      position:sticky;
-      top:0;
-      background:rgba(10,10,10,0.9);
-      z-index:10;
-    }
-
-    .logo h1 {
-      font-family:'Orbitron',sans-serif;
-      letter-spacing:3px;
-      font-size:2rem;
-      color:#00ffff;
-      cursor:pointer;
-      position:relative;
-    }
-
-    nav a {
-      color:#fff;
-      margin-left:20px;
-      text-decoration:none;
-    }
-
-    nav a:hover {
-      color:#ff3b2f;
-      text-shadow:0 0 10px #ff3b2f;
-    }
-
-    /* Glitch */
-    .glitch::before,
-    .glitch::after {
-      content: attr(data-text);
-      position:absolute;
-      left:0;
-      top:0;
-      opacity:0.8;
-    }
-
-    .glitch::before { color:#ff3b2f; }
-    .glitch::after { color:#00ffea; }
-
-    .glitch:hover::before,
-    .glitch:hover::after {
-      animation: glitchHover 0.5s infinite;
-    }
-
-    @keyframes glitchHover {
-      0%{transform:translate(0,0)}
-      50%{transform:translate(-2px,2px)}
-      100%{transform:translate(0,0)}
-    }
-
-    section {
-      padding:80px 50px;
-      border-bottom:1px solid rgba(255,255,255,0.1);
-    }
-
-    #hero {
-      height:80vh;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      text-align:center;
-    }
-
-    #hero h2 {
-      color:#00ffff;
-      animation:flicker 3s infinite;
-    }
-
-    @keyframes flicker {
-      0%,100%{opacity:1}
-      50%{opacity:0.4}
-    }
-  </style>
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <header>
@@ -117,6 +22,7 @@
 </header>
 
 <canvas id="particles"></canvas>
+<div id="smoke"></div>
 
 <section id="hero">
   <h2>Welcome to the Realm of Hassan Abkow</h2>
@@ -125,63 +31,35 @@
 
 <section id="about">
   <h2>About Me</h2>
-  <p>Offensive security, penetration testing, and custom tools.</p>
+  <p>I’m Ghxst — I’m passionate about offensive security and building security tools.</p>
 </section>
 
 <section id="projects">
   <h2>Projects</h2>
+  <div class="project-grid">
+    <div class="project-card">Project 1</div>
+    <div class="project-card">Project 2</div>
+    <div class="project-card">Project 3</div>
+  </div>
 </section>
 
 <section id="contact">
   <h2>Contact</h2>
+  <form>
+    <input type="text" placeholder="Name">
+    <input type="email" placeholder="Email">
+    <textarea placeholder="Message"></textarea>
+    <button type="button">Send</button>
+  </form>
 </section>
 
 <footer>
   <p>&copy; 2025 Hassan Abkow</p>
 </footer>
 
-<script>
-  // Smooth Scroll
-  document.querySelectorAll('nav a').forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      document.querySelector(link.getAttribute('href'))
-        .scrollIntoView({ behavior: 'smooth' });
-    });
-  });
-
-  // Particle Background
-  const canvas = document.getElementById('particles');
-  const ctx = canvas.getContext('2d');
-
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resize();
-
-  const particles = Array.from({length:120}, () => ({
-    x: Math.random()*canvas.width,
-    y: Math.random()*canvas.height,
-    vx: Math.random()-0.5,
-    vy: Math.random()-0.5
-  }));
-
-  function animate() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      if(p.x<0||p.x>canvas.width) p.vx*=-1;
-      if(p.y<0||p.y>canvas.height) p.vy*=-1;
-      ctx.fillStyle="#00ffff";
-      ctx.fillRect(p.x,p.y,2,2);
-    });
-    requestAnimationFrame(animate);
-  }
-  animate();
-</script>
-
+<!-- JS -->
+<script src="script.js" defer></script>
 </body>
 </html>
+
 

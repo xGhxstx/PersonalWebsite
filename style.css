@@ -126,3 +126,10 @@ body, header, section, footer {
   outline: none;
   font-family: 'Montserrat', sans-serif;
 }
+
+/* Section headings – About, Projects, Contact */
+section h2,
+section h3 {
+  color: #00ffff;
+  text-shadow: 0 0 5px #00ffff;
+}

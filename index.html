@@ -4,82 +4,180 @@
   <meta charset="UTF-8">
   <title>GHXST | Hassan Abkow</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- CSS -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header>
   <div class="logo">
-    <h1 class="glitch" data-text="GHXST">GHXST</h1>
+    <svg class="logo-ghost" width="48" height="58" viewBox="0 0 48 58" xmlns="http://www.w3.org/2000/svg" cursor="pointer">
+      <!-- Body -->
+      <path d="M4,26 Q4,4 24,4 Q44,4 44,26 L44,52 Q39,47 34,52 Q29,47 24,52 Q19,47 14,52 Q9,47 4,52 Z"
+            fill="#00ffff" opacity="0.92"/>
+      <!-- Left eye -->
+      <ellipse cx="17" cy="24" rx="5" ry="6" fill="#0a0a0a"/>
+      <ellipse cx="17" cy="24" rx="2.5" ry="3" fill="#ff3b2f"/>
+      <!-- Right eye -->
+      <ellipse cx="31" cy="24" rx="5" ry="6" fill="#0a0a0a"/>
+      <ellipse cx="31" cy="24" rx="2.5" ry="3" fill="#ff3b2f"/>
+      <!-- Menacing mouth -->
+      <path d="M15,35 Q18,32 21,35 Q24,38 27,35 Q30,32 33,35"
+            stroke="#0a0a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
   </div>
   <nav>
     <a href="#about">About</a>
     <a href="#projects">Projects</a>
+    <a href="#skills">Skills</a>
+    <a href="#ctf">CTF</a>
     <a href="#contact">Contact</a>
+    <a href="https://github.com/xghxstx" target="_blank" class="nav-github">GitHub ↗</a>
   </nav>
 </header>
 
 <canvas id="particles"></canvas>
 <div id="smoke"></div>
 
+<!-- HERO -->
 <section id="hero">
   <h2>Welcome to the Realm of Hassan Abkow</h2>
   <p>Student. Mysterious. Undefined.</p>
+  <div class="hero-tags">
+    <span class="tag">Purple Teaming</span>
+    <span class="tag">Ethical Hacking</span>
+    <span class="tag">Adversary Emulation</span>
+  </div>
+  <a href="#projects" class="cta-btn">View Projects ↓</a>
 </section>
 
+<!-- ABOUT -->
 <section id="about">
   <h2>About Me</h2>
-  <p>I’m Ghxst — an offensive security enthusiast focused on building security tools such as XEngine, an explanation and reasoning engine for security events, and GhxstRecon AI, a reconnaissance-focused platform. Driven by penetration testing and ethical hacking, I thrive in mystery and the unknown. Explore more of my work below.</p>
+  <p>I'm Ghxst — a security enthusiast operating across both sides of the battlefield. On offense, I build tools like XEngine, an explanation and reasoning engine for security events, and GhxstRecon AI, a reconnaissance-focused platform. On defense, I focus on understanding adversary behavior, bridging the gap between red and blue through purple teaming and adversary emulation. Driven by penetration testing, threat simulation, and the unknown. Explore more of my work below.</p>
 </section>
 
+<!-- PROJECTS -->
 <section id="projects">
   <h2>Projects</h2>
   <div class="project-grid">
 
     <div class="project-card">
-      <a href="https://github.com/xghxstx/XEngine"
-         target="_blank"
-         class="project-link">
-        XEngine
-      </a>
+      <div class="project-header">
+        <h3 class="project-name">XEngine</h3>
+        <span class="status-badge active">Active</span>
+      </div>
+      <p class="project-desc">An explanation and reasoning engine for security events. Ingests logs and alerts and surfaces clear, human-readable analysis — cutting through noise during incident response and threat hunting.</p>
+      <div class="tech-stack">
+        <span class="tech">Python</span>
+        <span class="tech">AI/ML</span>
+        <span class="tech">SIEM</span>
+      </div>
+      <a href="https://github.com/xghxstx/XEngine" target="_blank" class="project-link">View on GitHub ↗</a>
     </div>
 
     <div class="project-card">
-      <a href="https://github.com/xghxstx/ghxstrecon_ai"
-         target="_blank"
-         class="project-link">
-        GhxstRecon AI
-      </a>
+      <div class="project-header">
+        <h3 class="project-name">GhxstRecon AI</h3>
+        <span class="status-badge active">Active</span>
+      </div>
+      <p class="project-desc">A reconnaissance-focused platform powered by AI. Automates OSINT collection and target enumeration, streamlining the early phases of penetration testing engagements.</p>
+      <div class="tech-stack">
+        <span class="tech">Python</span>
+        <span class="tech">OSINT</span>
+        <span class="tech">Recon</span>
+      </div>
+      <a href="https://github.com/xghxstx/ghxstrecon_ai" target="_blank" class="project-link">View on GitHub ↗</a>
     </div>
 
-    <div class="project-card">
-      <a href="https://github.com/xghxstx"
-         target="_blank"
-         class="project-link">
-        More on GitHub
-      </a>
+    <div class="project-card project-card--more">
+      <h3 class="project-name">More on GitHub</h3>
+      <p class="project-desc">Additional tools, scripts, and experiments in offensive security, automation, and research.</p>
+      <a href="https://github.com/xghxstx" target="_blank" class="project-link">xghxstx ↗</a>
     </div>
 
   </div>
 </section>
 
+<!-- SKILLS -->
+<section id="skills">
+  <h2>Skills & Stack</h2>
+  <div class="skills-grid">
+
+    <div class="skill-group">
+      <h3>Offensive Security</h3>
+      <ul>
+        <li>Penetration Testing</li>
+        <li>OSINT & Reconnaissance</li>
+        <li>Web Application Security</li>
+        <li>Vulnerability Research</li>
+      </ul>
+    </div>
+
+    <div class="skill-group">
+      <h3>Tools</h3>
+      <ul>
+        <li>Burp Suite</li>
+        <li>Nmap</li>
+        <li>Metasploit</li>
+        <li>Kali Linux</li>
+      </ul>
+    </div>
+
+    <div class="skill-group">
+      <h3>Development</h3>
+      <ul>
+        <li>Python</li>
+        <li>Bash / Shell</li>
+        <li>AI / LLM Integration</li>
+        <li>REST APIs</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- CTF / ACHIEVEMENTS -->
+<section id="ctf">
+  <h2>CTF & Achievements</h2>
+  <div class="ctf-grid">
+
+    <div class="ctf-card">
+      <div class="ctf-platform">Hack The Box</div>
+      <p class="ctf-detail">Active — pwning machines and sharpening offensive skills across a range of difficulty tiers.</p>
+    </div>
+
+    <div class="ctf-card ctf-card--placeholder">
+      <div class="ctf-platform">CTF Competitions</div>
+      <p class="ctf-detail">On the horizon — competing and pushing skills to the next level.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- CONTACT -->
 <section id="contact">
   <h2>Contact</h2>
-  <form>
-    <input type="text" placeholder="Name">
-    <input type="email" placeholder="Email">
-    <textarea placeholder="Message"></textarea>
-    <button type="button">Send</button>
+  <p class="contact-sub">Want to collaborate, talk security, or just reach out?</p>
+  <form id="contact-form">
+    <div class="form-row">
+      <input type="text"  id="cf-name"  placeholder="Name"  required>
+      <input type="email" id="cf-email" placeholder="Email" required>
+    </div>
+    <textarea id="cf-msg" placeholder="Message" rows="5" required></textarea>
+    <button type="button" id="send-btn">Send Message</button>
+    <p id="form-feedback" class="form-feedback"></p>
   </form>
 </section>
 
 <footer>
-  <p>&copy; 2025 Hassan Abkow</p>
+  <div class="footer-inner">
+    <p>&copy; 2025 Hassan Abkow</p>
+    <div class="footer-links">
+      <a href="https://github.com/xghxstx" target="_blank">GitHub</a>
+    </div>
+  </div>
 </footer>
 
-<!-- JS -->
 <script src="script.js" defer></script>
 </body>
 </html>

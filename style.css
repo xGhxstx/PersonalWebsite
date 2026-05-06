@@ -421,3 +421,10 @@ section h2 { margin-bottom:30px; }
   font-size: 0.85rem;
   line-height: 1.7;
 }
+
+.project-private {
+  font-size: 0.75rem;
+  color: #555;
+  letter-spacing: 0.5px;
+  margin-top: auto;
+}

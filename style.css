@@ -353,3 +353,24 @@ section h2 { margin-bottom:30px; }
   .form-row { grid-template-columns:1fr; }
   .footer-inner { flex-direction:column; gap:10px; text-align:center; }
 }
+
+/* Ghost logo glitch */
+.logo-ghost {
+  filter: drop-shadow(0 0 6px #00ffff);
+  transition: filter 0.3s;
+  cursor: pointer;
+}
+
+.logo-ghost:hover {
+  animation: ghostGlitch 0.5s infinite;
+}
+
+@keyframes ghostGlitch {
+  0%   { filter: drop-shadow(0 0 6px #00ffff); transform: translate(0, 0); }
+  15%  { filter: drop-shadow(-3px 0 0 #ff3b2f) drop-shadow(3px 0 0 #00ffea); transform: translate(-2px, 1px); }
+  30%  { filter: drop-shadow(0 0 6px #00ffff); transform: translate(0, 0); }
+  45%  { filter: drop-shadow(3px 0 0 #ff3b2f) drop-shadow(-3px 0 0 #00ffea); transform: translate(2px, -1px); }
+  60%  { filter: drop-shadow(0 0 6px #00ffff); transform: translate(0, 0); }
+  75%  { filter: drop-shadow(-2px 0 0 #ff3b2f) drop-shadow(2px 0 0 #00ffea); transform: translate(-1px, 2px); }
+  100% { filter: drop-shadow(0 0 6px #00ffff); transform: translate(0, 0); }
+}

